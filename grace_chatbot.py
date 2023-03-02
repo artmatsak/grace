@@ -15,8 +15,8 @@ class GRACEChatbot(OpenAIChatbot):
 3. Ensure you have the values for all of the parameters required by the backend command. Collect from the customer any values you don't have. Do not collect information that is not required. No values are available to you except for those provided by the customer. If the customer cannot provide you with a value, you refuse to process their request.
 4. Ask the customer to hold on and then process their request by sending a command JSON to the backend in the following format:
 
-AI: All right, let me look into this for you. [json]{command_example_json}[/json]
-Backend: (To AI) {command_example_result}
+All right, let me look into this for you. [json]{command_example_json}[/json]
+Backend response: {command_example_result}
 
 5. Communicate the execution result back to the customer and ask if there's anything else you can do for them.
 6. If there's nothing else, say goodbye and output "END".
@@ -27,16 +27,16 @@ Only the following Python commands are available to you. If the customer's reque
 
 You can use the look_up command to look up answers to questions related to {business_name}. For example:
 
-Customer: Do you have parking on site?
-AI: [json]{{"command": "look_up", "params": {{"question": "Do you have parking on site?"}}}}[/json]
-Backend: (To AI) On-site parking is available
+Do you have parking on site?
+[json]{{"command": "look_up", "params": {{"question": "Do you have parking on site?"}}}}[/json]
+Backend response: On-site parking is available
+Yes, we do offer on-site parking. Is there anything else I can help you with?
+
+To execute a backend command, you use the provided [json][/json] syntax and never output actual computer code.
 
 You use all dates exactly as provided by the customer, without rephrasing or converting them. {extra_instructions}
 
-A transcript of your chat session with a customer follows.
-"""
-    NAMES = ("AI", "Customer")
-    BACKEND_NAME = "Backend"
+You start the conversation by outputting your first utterance."""
 
     def __init__(
         self,
@@ -44,7 +44,7 @@ A transcript of your chat session with a customer follows.
         backend: Router,
         domain: Dict[str, str],
         output_callback: Callable[[str], None],
-        openai_engine: str = "text-davinci-003"
+        openai_engine: str = "gpt-3.5-turbo"
     ):
         self.knowledge_base = KnowledgeBase(domain["answers"])
 
@@ -73,26 +73,24 @@ A transcript of your chat session with a customer follows.
         super().__init__(openai=openai,
                          initial_prompt=initial_prompt,
                          output_callback=output_callback,
-                         names=self.NAMES,
                          openai_engine=openai_engine)
 
-        self.stop.append(f"{self.BACKEND_NAME}:")
         self.backend = backend
         self.domain = domain
 
     def _get_all_utterances(self):
         utterance = self._get_next_utterance()
 
-        m = re.match(r"((.*?)($|\[json\](.*?)\[/json\]))",
-                     utterance, re.IGNORECASE | re.MULTILINE | re.DOTALL)
-        utterance = m[2].strip()
-        command_json = m[4]
+        m = re.match(r"(.*?)($|\[json\](.*?)\[/json\])",
+                     utterance, re.IGNORECASE | re.DOTALL)
+        utterance = m[1].strip()
+        command_json = m[3]
 
         if utterance:
             self.output_callback(utterance)
 
-        if self.prompt is not None:
-            self.prompt = f"{self.prompt} {m[1]}"
+        if self.messages:
+            self.messages.append({"role": self.ROLE_ASSISTANT, "content": m[0]})
 
         if command_json:
             logging.debug(f"Invoking backend command: {repr(command_json)}")
@@ -104,6 +102,6 @@ A transcript of your chat session with a customer follows.
                 result = str(e)
                 logging.error(e)
 
-            if self.prompt is not None:
-                self._add_response(self.BACKEND_NAME, f"(To AI) {result}")
+            if self.messages:
+                self._add_response(self.ROLE_SYSTEM, f"Backend response: {result}")
                 self._get_all_utterances()
