@@ -93,7 +93,8 @@ You start the conversation by outputting your first utterance."""
             self.output_callback(utterance)
 
         if self.messages:
-            self.messages.append({"role": self.ROLE_ASSISTANT, "content": m[0]})
+            self.messages.append(
+                {"role": self.ROLE_ASSISTANT, "content": m[0]})
 
         if command_json:
             logging.debug(f"Invoking backend command: {repr(command_json)}")
@@ -106,5 +107,6 @@ You start the conversation by outputting your first utterance."""
                 logging.error(e)
 
             if self.messages:
-                self._add_response(self.ROLE_SYSTEM, f"Backend response: {result}")
+                self._add_response(
+                    self.ROLE_SYSTEM, f"Backend response: {result}")
                 self._get_all_utterances()

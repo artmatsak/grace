@@ -54,7 +54,8 @@ class OpenAIChatbot():
             self.output_callback(utterance)
 
         if self.messages:
-            self.messages.append({"role": self.ROLE_ASSISTANT, "content": utterance})
+            self.messages.append(
+                {"role": self.ROLE_ASSISTANT, "content": utterance})
 
     def _get_next_utterance(self) -> str:
         completion = self.openai.ChatCompletion.create(
