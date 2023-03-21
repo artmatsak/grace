@@ -69,9 +69,12 @@ You start the conversation by outputting your first utterance."""
             command_example_result=command_example["result"],
             commands_string=commands_string
         )
+        initial_messages = [
+            {"role": self.ROLE_USER, "content": initial_prompt}
+        ]
 
         super().__init__(openai=openai,
-                         initial_prompt=initial_prompt,
+                         initial_messages=initial_messages,
                          output_callback=output_callback,
                          openai_engine=openai_engine)
 

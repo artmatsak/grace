@@ -1,6 +1,6 @@
 import string
 import logging
-from typing import Tuple, Callable, List
+from typing import Callable, List, Dict
 
 
 class OpenAIChatbot():
@@ -11,13 +11,13 @@ class OpenAIChatbot():
     def __init__(
         self,
         openai,
-        initial_prompt: str,
+        initial_messages: List[Dict[str, str]],
         output_callback: Callable[[str], None],
         end_token: str = "END",
         openai_engine: str = "gpt-3.5-turbo"
     ):
         self.openai = openai
-        self.initial_prompt = initial_prompt
+        self.initial_messages = initial_messages
         self.output_callback = output_callback
         self.end_token = end_token
         self.openai_engine = openai_engine
@@ -25,13 +25,9 @@ class OpenAIChatbot():
         self.messages = []
 
     def start_session(self):
-        self.messages = [
-            {
-                "role": self.ROLE_SYSTEM,
-                "content": self.initial_prompt
-            }
-        ]
-        logging.debug(f"Starting chatbot session with messages: {self.messages}")
+        self.messages = self.initial_messages.copy()
+        logging.debug(
+            f"Starting chatbot session with messages: {self.messages}")
         self._get_all_utterances()
 
     def send_responses(self, responses: List[str]):
